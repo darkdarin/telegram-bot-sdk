@@ -1,0 +1,48 @@
+{
+    "name": "darkdarin/telegram-bot-sdk",
+    "description": "SDK for work with Telegram Bot API",
+    "license": "MIT",
+    "type": "package",
+    "authors": [
+        {
+            "name": "Babushkin Pavel",
+            "email": "idarksoft@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "DarkDarin\\TelegramBotSdk\\": "src/"
+        }
+    },
+    "require": {
+        "php": "8.2.*|8.3.*",
+        "darkdarin/serializer": "^1.3",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^2.0",
+        "psr-discovery/http-client-implementations": "^1.0",
+        "psr-discovery/http-factory-implementations": "^1.0",
+        "php-http/multipart-stream-builder": "^1.3"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.1",
+        "illuminate/support": "^10.0",
+        "hyperf/di": "~3.0.0",
+        "roave/security-advisories": "dev-latest"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "DarkDarin\\TelegramBotSdk\\TelegramBotSdkServiceProvider"
+            ]
+        },
+        "hyperf": {
+            "config": "DarkDarin\\TelegramBotSdk\\ConfigProvider"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": false
+        }
+    }
+}
