@@ -2,6 +2,7 @@
 
 namespace DarkDarin\TelegramBotSdk\TransportClient;
 
+use Carbon\Carbon;
 use DarkDarin\Serializer\ApiSerializer\ApiSerializerInterface;
 use DarkDarin\Serializer\MethodParametersSerializer\MethodParametersMapperInterface;
 use DarkDarin\TelegramBotSdk\DTO\Response;
@@ -167,7 +168,7 @@ class TransportClient implements TransportClientInterface
             return $value;
         }
 
-        if (is_object($value)) {
+        if (is_object($value) && !$value instanceof \UnitEnum && !$value instanceof Carbon) {
             $properties = [];
             $reflection = new \ReflectionClass($value);
             foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
