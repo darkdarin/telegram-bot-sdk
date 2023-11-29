@@ -123,7 +123,11 @@ class TransportClient implements TransportClientInterface
             if ($fieldName === $multipartField && $value instanceof StreamInterface) {
                 $builder->addResource($fieldName, $value);
             } elseif ($value !== null) {
-                $normalizedValue = $this->normalizeValue($value, $builder);
+                $normalizedValue = $this->serializer->normalize(
+                    $this->normalizeValue($value, $builder),
+                    'json'
+                );
+
                 if (is_array($normalizedValue) || is_object($normalizedValue)) {
                     $builder->addResource(
                         $fieldName,
@@ -178,17 +182,21 @@ class TransportClient implements TransportClientInterface
             return 'attach://' . $fileName;
         }
 
-        if (is_scalar($value)) {
+        if (
+            is_scalar($value)
+            || $value instanceof \UnitEnum
+            || $value instanceof \DateTimeInterface
+        ) {
             return $value;
         }
 
-        if (is_object($value) && !$value instanceof \UnitEnum && !$value instanceof Carbon) {
+        if (is_object($value)) {
             $properties = [];
             $reflection = new \ReflectionClass($value);
             foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
                 $properties[$property->getName()] = $this->normalizeValue($property->getValue($value), $builder);
             }
-            $value = new ($reflection->getName())(...$properties);
+            return new ($reflection->getName())(...$properties);
         }
 
         if (is_array($value)) {
@@ -196,8 +204,10 @@ class TransportClient implements TransportClientInterface
                 $normalizedValue = $this->normalizeValue($fieldValue, $builder);
                 $value[$fieldName] = $normalizedValue;
             }
+
+            return $value;
         }
 
-        return $this->serializer->normalize($value, 'json');
+        return $value;
     }
 }
