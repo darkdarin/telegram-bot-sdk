@@ -18,6 +18,7 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface;
 class TransportClient implements TransportClientInterface
 {
     private const BASE_URL = 'https://api.telegram.org';
+    private const MAX_RETRY = 10;
 
     public function __construct(
         private readonly ClientInterface $client,
@@ -55,9 +56,22 @@ class TransportClient implements TransportClientInterface
             } else {
                 $request = $this->makeJsonRequest($method, $parameters);
             }
-            $rawResponse = $this->client->sendRequest($request);
-            /** @var Response $response */
-            $response = $this->serializer->deserialize($rawResponse->getBody()->getContents(), Response::class, 'json');
+
+            $result = false;
+            $retryCount = 0;
+
+            do {
+                $retryCount++;
+                $rawResponse = $this->client->sendRequest($request);
+                /** @var Response $response */
+                $response = $this->serializer->deserialize($rawResponse->getBody()->getContents(), Response::class, 'json');
+                // If returned "Too many requests" - retry after some time
+                if ($response->error_code === 429) {
+                    sleep($response->parameters?->retry_after ?? 1);
+                    continue;
+                }
+                $result = true;
+            } while (!$result || $retryCount >= self::MAX_RETRY);
 
             if ($response->error_code !== null || $rawResponse->getStatusCode() !== 200) {
                 throw new TelegramException(

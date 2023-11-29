@@ -9,5 +9,6 @@ readonly class Response
         public mixed $result = null,
         public ?int $error_code = null,
         public ?string $description = null,
+        public ?ResponseParameters $parameters = null,
     ) {}
 }
