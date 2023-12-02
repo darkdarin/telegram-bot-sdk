@@ -2,7 +2,6 @@
 
 namespace DarkDarin\TelegramBotSdk\TransportClient;
 
-use Carbon\Carbon;
 use DarkDarin\Serializer\ApiSerializer\ApiSerializerInterface;
 use DarkDarin\Serializer\MethodParametersSerializer\MethodParametersMapperInterface;
 use DarkDarin\TelegramBotSdk\DTO\Response;
@@ -26,17 +25,13 @@ class TransportClient implements TransportClientInterface
         private readonly StreamFactoryInterface $streamFactory,
         private readonly ApiSerializerInterface $serializer,
         private readonly MethodParametersMapperInterface $parametersMapper,
-        private ?string $token = null,
-    ) {}
-
-    public function setToken(string $token): void
-    {
-        $this->token = $token;
+    ) {
     }
 
     /**
      * @template TObject of object
      * @template TType of string|class-string<TObject>
+     * @param string $token
      * @param string $method
      * @param array $parameters
      * @param class-string<TType>|null $responseType
@@ -45,6 +40,7 @@ class TransportClient implements TransportClientInterface
      * @return mixed
      */
     public function executeMethod(
+        string $token,
         string $method,
         array $parameters,
         ?string $responseType = null,
@@ -52,9 +48,9 @@ class TransportClient implements TransportClientInterface
     ): mixed {
         try {
             if ($multipartField !== null) {
-                $request = $this->makeMultipartRequest($method, $parameters, $multipartField);
+                $request = $this->makeMultipartRequest($token, $method, $parameters, $multipartField);
             } else {
-                $request = $this->makeJsonRequest($method, $parameters);
+                $request = $this->makeJsonRequest($token, $method, $parameters);
             }
 
             $result = false;
@@ -64,7 +60,11 @@ class TransportClient implements TransportClientInterface
                 $retryCount++;
                 $rawResponse = $this->client->sendRequest($request);
                 /** @var Response $response */
-                $response = $this->serializer->deserialize($rawResponse->getBody()->getContents(), Response::class, 'json');
+                $response = $this->serializer->deserialize(
+                    $rawResponse->getBody()->getContents(),
+                    Response::class,
+                    'json'
+                );
                 // If returned "Too many requests" - retry after some time
                 if ($response->error_code === 429) {
                     sleep($response->parameters?->retry_after ?? 1);
@@ -92,7 +92,7 @@ class TransportClient implements TransportClientInterface
         }
     }
 
-    protected function makeJsonRequest(string $method, array $parameters): RequestInterface
+    protected function makeJsonRequest(string $token, string $method, array $parameters): RequestInterface
     {
         $data = $this->parametersMapper->getNamedArguments($method, $parameters);
 
@@ -101,7 +101,7 @@ class TransportClient implements TransportClientInterface
         );
 
         return $this->requestFactory
-            ->createRequest('POST', $this->getUrl($this->getMethodName($method)))
+            ->createRequest('POST', $this->getUrl($token, $this->getMethodName($method)))
             ->withBody($dataStream)
             ->withHeader('Content-Type', 'application/json');
     }
@@ -111,6 +111,7 @@ class TransportClient implements TransportClientInterface
      * @throws \ReflectionException
      */
     protected function makeMultipartRequest(
+        string $token,
         string $method,
         array $parameters,
         string|bool $multipartField
@@ -147,17 +148,17 @@ class TransportClient implements TransportClientInterface
         }
 
         return $this->requestFactory
-            ->createRequest('POST', $this->getUrl($this->getMethodName($method)))
+            ->createRequest('POST', $this->getUrl($token, $this->getMethodName($method)))
             ->withBody($builder->build())
             ->withHeader('Content-Type', 'multipart/form-data; boundary="' . $builder->getBoundary() . '"');
     }
 
-    private function getUrl(string $method): string
+    private function getUrl(string $token, string $method): string
     {
         return sprintf(
             '%s/bot%s/%s',
             trim(self::BASE_URL, '/'),
-            $this->token,
+            $token,
             $method
         );
     }
