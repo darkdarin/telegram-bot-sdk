@@ -3,6 +3,7 @@
 namespace DarkDarin\TelegramBotSdk;
 
 use DarkDarin\Serializer\ApiSerializer\ApiSerializerInterface;
+use DarkDarin\TelegramBotSdk\Commands\CommandHandlerInterface;
 use DarkDarin\TelegramBotSdk\Exceptions\MisconfiguredClientException;
 use DarkDarin\TelegramBotSdk\TransportClient\TransportClientInterface;
 use Psr\Container\ContainerExceptionInterface;
@@ -31,7 +32,7 @@ class Telegram
             if (empty($config['token'])) {
                 throw new MisconfiguredClientException(sprintf('Need set token in configuration for bot [%s]', $botName));
             }
-            $this->clients[$botName] = $this->makeClientInstance($config['token']);
+            $this->clients[$botName] = $this->makeClientInstance($botName, $config['token']);
         }
     }
 
@@ -70,12 +71,14 @@ class Telegram
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    protected function makeClientInstance(string $token): TelegramClient
+    protected function makeClientInstance(string $botName, string $token): TelegramClient
     {
         return new TelegramClient(
+            $botName,
+            $token,
             $this->container->get(TransportClientInterface::class),
             $this->container->get(ApiSerializerInterface::class),
-            $token
+            $this->container->get(CommandHandlerInterface::class),
         );
     }
 }

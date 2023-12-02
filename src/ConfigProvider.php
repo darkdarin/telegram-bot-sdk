@@ -2,6 +2,8 @@
 
 namespace DarkDarin\TelegramBotSdk;
 
+use DarkDarin\TelegramBotSdk\Commands\CommandHandlerInterface;
+use DarkDarin\TelegramBotSdk\Factories\CommandHandlerFactory;
 use DarkDarin\TelegramBotSdk\Factories\PsrClientFactory;
 use DarkDarin\TelegramBotSdk\Factories\PsrRequestFactoryFactory;
 use DarkDarin\TelegramBotSdk\Factories\PsrResponseFactoryFactory;
@@ -14,6 +16,9 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
+/**
+ * @psalm-api
+ */
 class ConfigProvider
 {
     public function __invoke(): array
@@ -26,6 +31,7 @@ class ConfigProvider
                 StreamFactoryInterface::class => PsrStreamFactoryFactory::class,
                 TransportClientInterface::class => TransportClient::class,
                 Telegram::class => TelegramFactory::class,
+                CommandHandlerInterface::class => CommandHandlerFactory::class,
             ],
             'publish' => [
                 [

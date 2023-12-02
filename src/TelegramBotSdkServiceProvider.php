@@ -2,6 +2,8 @@
 
 namespace DarkDarin\TelegramBotSdk;
 
+use DarkDarin\TelegramBotSdk\Commands\CommandHandler;
+use DarkDarin\TelegramBotSdk\Commands\CommandHandlerInterface;
 use DarkDarin\TelegramBotSdk\Factories\PsrClientFactory;
 use DarkDarin\TelegramBotSdk\Factories\PsrRequestFactoryFactory;
 use DarkDarin\TelegramBotSdk\Factories\PsrResponseFactoryFactory;
@@ -16,6 +18,9 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
+/**
+ * @psalm-api
+ */
 class TelegramBotSdkServiceProvider extends ServiceProvider
 {
     public function boot(): void
@@ -40,5 +45,27 @@ class TelegramBotSdkServiceProvider extends ServiceProvider
 
             return new Telegram($bots, $default, $container);
         });
+
+        $this->registerCommandHandler();
+    }
+
+    private function registerCommandHandler(): void
+    {
+        $this->app->singleton(CommandHandlerInterface::class, CommandHandler::class);
+
+        $this->app->afterResolving(
+            CommandHandlerInterface::class,
+            function (CommandHandlerInterface $commandHandler, Container $container) {
+                $bots = Config::get('telegram.bots', []);
+
+                foreach ($bots as $botName => $config) {
+                    if (!empty($config['commands'])) {
+                        foreach ($config['commands'] as $command) {
+                            $commandHandler->registerCommand($botName, $container->get($command));
+                        }
+                    }
+                }
+            }
+        );
     }
 }

@@ -3,6 +3,7 @@
 namespace DarkDarin\TelegramBotSdk;
 
 use DarkDarin\Serializer\ApiSerializer\ApiSerializerInterface;
+use DarkDarin\TelegramBotSdk\Commands\CommandHandlerInterface;
 use DarkDarin\TelegramBotSdk\DTO\ChatActionEnum;
 use DarkDarin\TelegramBotSdk\DTO\DiceEmojiEnum;
 use DarkDarin\TelegramBotSdk\DTO\ForceReply;
@@ -33,9 +34,11 @@ use Psr\Http\Message\StreamInterface;
 readonly class TelegramClient
 {
     public function __construct(
+        private string $botName,
+        private string $token,
         private TransportClientInterface $client,
         private ApiSerializerInterface $serializer,
-        private string $token,
+        private CommandHandlerInterface $commandHandler,
     ) {
     }
 
@@ -47,6 +50,19 @@ readonly class TelegramClient
             throw $e;
         } catch (\Throwable $e) {
             throw new TelegramException($e->getMessage(), $e->getCode(), $e);
+        }
+    }
+
+    public function handleCommands(Update|Message $update): void
+    {
+        if ($update instanceof Update) {
+            $message = $update->message;
+        } else {
+            $message = $update;
+        }
+
+        if ($message !== null) {
+            $this->commandHandler->handle($this->botName, $message);
         }
     }
 
