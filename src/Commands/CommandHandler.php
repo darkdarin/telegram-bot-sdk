@@ -16,7 +16,6 @@ class CommandHandler implements CommandHandlerInterface
     private array $commands = [];
 
     public function __construct(
-        private readonly Telegram $telegram,
         private readonly ContainerInterface $container,
     ) {
     }
@@ -130,6 +129,8 @@ class CommandHandler implements CommandHandlerInterface
      */
     private function getMethodParameters(string $botName, Message $message, object $command, array $arguments): array
     {
+        $telegram = $this->container->get(Telegram::class);
+
         $parameters = [];
         $methodReflection = new \ReflectionMethod($command, 'handle');
         foreach ($methodReflection->getParameters() as $parameter) {
@@ -141,7 +142,7 @@ class CommandHandler implements CommandHandlerInterface
             if ($parameter->getType() instanceof \ReflectionNamedType) {
                 $typeName = $parameter->getType()->getName();
                 if ($typeName === TelegramClient::class) {
-                    $parameters[$parameter->getName()] = $this->telegram->bot($botName);
+                    $parameters[$parameter->getName()] = $telegram->bot($botName);
                     continue;
                 } elseif($typeName === Message::class) {
                     $parameters[$parameter->getName()] = $message;
