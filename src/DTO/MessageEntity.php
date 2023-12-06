@@ -26,5 +26,32 @@ readonly class MessageEntity
         public ?User $user = null,
         public ?string $language = null,
         public ?string $custom_emoji_id = null,
-    ) {}
+    ) {
+    }
+
+    /**
+     * Correct way for get entity value from text by offset and length
+     *
+     * @see https://core.telegram.org/api/entities#entity-length
+     *
+     * @param string $text
+     * @return string
+     */
+    public function getValue(string $text): string
+    {
+        $textBytes = unpack('C*', $text);
+        $value = [];
+        $offset = 0;
+
+        foreach ($textBytes as $byte) {
+            if ($offset >= $this->offset && $offset < $this->offset + $this->length) {
+                $value[] = $byte;
+            }
+            if (($byte & 0xc0) != 0x80) {
+                $offset += ($byte >= 0xf0 ? 2 : 1);
+            }
+        }
+
+        return pack('C*', ...$value);
+    }
 }
