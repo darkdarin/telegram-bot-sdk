@@ -44,7 +44,7 @@ readonly class MessageEntity
         $offset = 0;
 
         foreach ($textBytes as $byte) {
-            if ($offset >= $this->offset && $offset < $this->offset + $this->length) {
+            if ($offset >= $this->offset && $offset <= $this->offset + $this->length) {
                 $value[] = $byte;
             }
             if (($byte & 0xc0) != 0x80) {
@@ -52,6 +52,6 @@ readonly class MessageEntity
             }
         }
 
-        return pack('C*', ...$value);
+        return rtrim(pack('C*', ...$value));
     }
 }
