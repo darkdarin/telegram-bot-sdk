@@ -44,11 +44,12 @@ readonly class MessageEntity
         $offset = 0;
 
         foreach ($textBytes as $byte) {
-            if ($offset >= $this->offset && $offset <= $this->offset + $this->length) {
-                $value[] = $byte;
-            }
             if (($byte & 0xc0) != 0x80) {
                 $offset += ($byte >= 0xf0 ? 2 : 1);
+            }
+
+            if ($offset > $this->offset && $offset <= $this->offset + $this->length) {
+                $value[] = $byte;
             }
         }
 
