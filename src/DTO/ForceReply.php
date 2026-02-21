@@ -19,6 +19,6 @@ readonly class ForceReply
     public function __construct(
         public bool $force_reply,
         public ?string $input_field_placeholder = null,
-        public ?bool $selective = null
+        public ?bool $selective = null,
     ) {}
 }

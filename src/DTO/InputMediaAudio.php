@@ -31,6 +31,6 @@ readonly class InputMediaAudio
         public ?array $caption_entities = null,
         public ?int $duration = null,
         public ?string $performer = null,
-        public ?string $title = null
+        public ?string $title = null,
     ) {}
 }

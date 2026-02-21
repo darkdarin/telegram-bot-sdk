@@ -2,13 +2,15 @@
 
 namespace DarkDarin\TelegramBotSdk;
 
-use DarkDarin\Serializer\ApiSerializer\ApiSerializerInterface;
+use Argo\EntityDefinition\Reflector\MethodDefinition\MethodDefinitionReflectorInterface;
+use Argo\RestClient\Serializer\RestClientSerializerInterface;
 use DarkDarin\TelegramBotSdk\Commands\CommandHandlerInterface;
 use DarkDarin\TelegramBotSdk\Exceptions\MisconfiguredClientException;
-use DarkDarin\TelegramBotSdk\TransportClient\TransportClientInterface;
+use DarkDarin\TelegramBotSdk\TransportClient\TelegramRequestFactoryInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @psalm-api
@@ -30,9 +32,11 @@ class Telegram
     ) {
         foreach ($bots as $botName => $config) {
             if (empty($config['token'])) {
-                throw new MisconfiguredClientException(sprintf('Need set token in configuration for bot [%s]', $botName));
+                throw new MisconfiguredClientException(
+                    sprintf('Need set token in configuration for bot [%s]', $botName),
+                );
             }
-            $this->clients[$botName] = $this->makeClientInstance($botName, $config['token']);
+            $this->clients[$botName] = $this->makeClientInstance($botName)->withToken($config['token']);
         }
     }
 
@@ -51,8 +55,7 @@ class Telegram
 
     public function __call(string $method, array $params): mixed
     {
-        $client = $this->getClientInstance();
-        return $client->$method(...$params);
+        return $this->getClientInstance()->$method(...$params);
     }
 
     private function getClientInstance(?string $botName = null): TelegramClient
@@ -71,13 +74,14 @@ class Telegram
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    protected function makeClientInstance(string $botName, string $token): TelegramClient
+    protected function makeClientInstance(string $botName): TelegramClient
     {
         return new TelegramClient(
             $botName,
-            $token,
-            $this->container->get(TransportClientInterface::class),
-            $this->container->get(ApiSerializerInterface::class),
+            $this->container->get(TelegramRequestFactoryInterface::class),
+            $this->container->get(ClientInterface::class),
+            $this->container->get(MethodDefinitionReflectorInterface::class),
+            $this->container->get(RestClientSerializerInterface::class),
             $this->container->get(CommandHandlerInterface::class),
         );
     }

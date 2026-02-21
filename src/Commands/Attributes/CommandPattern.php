@@ -6,7 +6,6 @@ namespace DarkDarin\TelegramBotSdk\Commands\Attributes;
 readonly class CommandPattern
 {
     public function __construct(
-        public string $pattern
-    ) {
-    }
+        public string $pattern,
+    ) {}
 }

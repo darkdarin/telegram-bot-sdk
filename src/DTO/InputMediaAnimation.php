@@ -33,6 +33,6 @@ readonly class InputMediaAnimation
         public ?int $width = null,
         public ?int $height = null,
         public ?int $duration = null,
-        public ?bool $has_spoiler = null
+        public ?bool $has_spoiler = null,
     ) {}
 }

@@ -26,8 +26,7 @@ readonly class MessageEntity
         public ?User $user = null,
         public ?string $language = null,
         public ?string $custom_emoji_id = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Correct way for get entity value from text by offset and length

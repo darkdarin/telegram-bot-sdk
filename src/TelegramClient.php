@@ -2,7 +2,13 @@
 
 namespace DarkDarin\TelegramBotSdk;
 
-use DarkDarin\Serializer\ApiSerializer\ApiSerializerInterface;
+use Argo\EntityDefinition\Reflector\MethodDefinition\MethodDefinitionReflectorInterface;
+use Argo\RestClient\RestClient;
+use Argo\RestClient\RestClientInterface;
+use Argo\RestClient\Serializer\RestClientSerializerInterface;
+use Argo\Serializer\JsonEncoder\JsonEncoder;
+use Argo\Types\Atomic\ClassType;
+use DarkDarin\TelegramBotSdk\Attribute\MultipartRequest;
 use DarkDarin\TelegramBotSdk\Commands\CommandHandlerInterface;
 use DarkDarin\TelegramBotSdk\DTO\ChatActionEnum;
 use DarkDarin\TelegramBotSdk\DTO\DiceEmojiEnum;
@@ -25,7 +31,8 @@ use DarkDarin\TelegramBotSdk\DTO\UpdateTypeEnum;
 use DarkDarin\TelegramBotSdk\DTO\User;
 use DarkDarin\TelegramBotSdk\DTO\WebhookInfo;
 use DarkDarin\TelegramBotSdk\Exceptions\TelegramException;
-use DarkDarin\TelegramBotSdk\TransportClient\TransportClientInterface;
+use DarkDarin\TelegramBotSdk\TransportClient\TelegramRequestFactoryInterface;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\StreamInterface;
 
 /**
@@ -33,19 +40,33 @@ use Psr\Http\Message\StreamInterface;
  */
 readonly class TelegramClient
 {
+    private RestClientInterface $client;
+
     public function __construct(
         private string $botName,
-        private string $token,
-        private TransportClientInterface $client,
-        private ApiSerializerInterface $serializer,
+        private TelegramRequestFactoryInterface $requestFactory,
+        ClientInterface $client,
+        MethodDefinitionReflectorInterface $methodReflector,
+        private RestClientSerializerInterface $serializer,
         private CommandHandlerInterface $commandHandler,
     ) {
+        $this->client = new RestClient($this->requestFactory, $client, $methodReflector);
+    }
+
+    public function withToken(string $token): self
+    {
+        $this->requestFactory->setToken($token);
+        return $this;
     }
 
     public function getWebhookUpdate(string $requestBody): Update
     {
         try {
-            return $this->serializer->deserialize($requestBody, Update::class, 'json');
+            return $this->serializer->deserialize(
+                $requestBody,
+                new ClassType(Update::class),
+                JsonEncoder::FORMAT,
+            );
         } catch (TelegramException $e) {
             throw $e;
         } catch (\Throwable $e) {
@@ -69,7 +90,7 @@ readonly class TelegramClient
     public function toArray(object $object): array
     {
         try {
-            return $this->serializer->normalize($object);
+            return $this->serializer->normalize($object, JsonEncoder::FORMAT);
         } catch (TelegramException $e) {
             throw $e;
         } catch (\Throwable $e) {
@@ -85,16 +106,16 @@ readonly class TelegramClient
      * @param int|null $offset Identifier of the first update to be returned. Must be greater by one than the highest among the identifiers of previously received updates.
      * @param int|null $limit Limits the number of updates to be retrieved. Values between 1-100 are accepted. Defaults to 100.
      * @param int|null $timeout Timeout in seconds for long polling. Defaults to 0, i.e. usual short polling. Should be positive, short polling should be used for testing purposes only.
-     * @param array<UpdateTypeEnum> $allowed_updates List of the update types you want your bot to receive
-     * @return array<Update>
+     * @param list<UpdateTypeEnum> $allowed_updates List of the update types you want your bot to receive
+     * @return list<Update>
      */
     public function getUpdates(
         int $offset = null,
         int $limit = null,
         int $timeout = null,
-        array $allowed_updates = []
+        array $allowed_updates = [],
     ): array {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Update::class . '[]');
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -116,6 +137,7 @@ readonly class TelegramClient
      * @param string|null $secret_token A secret token to be sent in a header “X-Telegram-Bot-Api-Secret-Token” in every webhook request, 1-256 characters. Only characters A-Z, a-z, 0-9, _ and - are allowed. The header is useful to ensure that the request comes from a webhook set by you.
      * @return bool True on success.
      */
+    #[MultipartRequest('certificate')]
     public function setWebhook(
         string $url,
         string|StreamInterface $certificate = null,
@@ -125,7 +147,7 @@ readonly class TelegramClient
         bool $drop_pending_updates = null,
         string $secret_token = null,
     ): bool {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), multipartField: 'certificate');
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -138,7 +160,7 @@ readonly class TelegramClient
      */
     public function deleteWebhook(bool $drop_pending_updates = null): bool
     {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args());
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -149,7 +171,7 @@ readonly class TelegramClient
      */
     public function getWebhookInfo(): WebhookInfo
     {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), WebhookInfo::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -159,7 +181,7 @@ readonly class TelegramClient
      */
     public function getMe(): User
     {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), User::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -193,7 +215,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -217,7 +239,7 @@ readonly class TelegramClient
         bool $disable_notification = null,
         bool $protect_content = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -255,7 +277,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): MessageId {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), MessageId::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -278,6 +300,7 @@ readonly class TelegramClient
      * @param InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply|null $reply_markup Additional interface options
      * @return Message
      */
+    #[MultipartRequest('photo')]
     public function sendPhoto(
         int|string $chat_id,
         StreamInterface|string $photo,
@@ -292,7 +315,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class, 'photo');
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -320,6 +343,7 @@ readonly class TelegramClient
      * @param InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply|null $reply_markup Additional interface options
      * @return Message
      */
+    #[MultipartRequest('audio')]
     public function sendAudio(
         int|string $chat_id,
         StreamInterface|string $audio,
@@ -337,7 +361,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class, 'audio');
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -362,6 +386,7 @@ readonly class TelegramClient
      * @param InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply|null $reply_markup Additional interface options
      * @return Message
      */
+    #[MultipartRequest('document')]
     public function sendDocument(
         int|string $chat_id,
         StreamInterface|string $document,
@@ -377,7 +402,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class, 'document');
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -406,6 +431,7 @@ readonly class TelegramClient
      * @param InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply|null $reply_markup Additional interface options
      * @return Message
      */
+    #[MultipartRequest('video')]
     public function sendVideo(
         int|string $chat_id,
         StreamInterface|string $video,
@@ -425,7 +451,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class, 'video');
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -453,6 +479,7 @@ readonly class TelegramClient
      * @param InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply|null $reply_markup Additional interface options
      * @return Message
      */
+    #[MultipartRequest('animation')]
     public function sendAnimation(
         int|string $chat_id,
         StreamInterface|string $animation,
@@ -471,7 +498,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class, 'animation');
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -496,6 +523,7 @@ readonly class TelegramClient
      * @param InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply|null $reply_markup Additional interface options
      * @return Message
      */
+    #[MultipartRequest('voice')]
     public function sendVoice(
         int|string $chat_id,
         StreamInterface|string $voice,
@@ -510,7 +538,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class, 'voice');
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -533,6 +561,7 @@ readonly class TelegramClient
      * @param InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply|null $reply_markup Additional interface options
      * @return Message
      */
+    #[MultipartRequest('video_note')]
     public function sendVideoNote(
         int|string $chat_id,
         StreamInterface|string $video_note,
@@ -546,7 +575,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class, 'video_note');
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -563,8 +592,9 @@ readonly class TelegramClient
      * @param bool|null $protect_content Protects the contents of the sent messages from forwarding and saving
      * @param int|null $reply_to_message_id If the messages are a reply, ID of the original message
      * @param bool|null $allow_sending_without_reply Pass True if the message should be sent even if the specified replied-to message is not found
-     * @return array<Message>
+     * @return list<Message>
      */
+    #[MultipartRequest]
     public function sendMediaGroup(
         int|string $chat_id,
         array $media,
@@ -574,7 +604,7 @@ readonly class TelegramClient
         int $reply_to_message_id = null,
         bool $allow_sending_without_reply = null,
     ): array {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class . '[]', true);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -613,7 +643,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -656,7 +686,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -691,7 +721,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -742,7 +772,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -771,7 +801,7 @@ readonly class TelegramClient
         bool $allow_sending_without_reply = null,
         InlineKeyboardMarkup|ReplyKeyboardMarkup|ReplyKeyboardRemove|ForceReply $reply_markup = null,
     ): Message {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -791,7 +821,7 @@ readonly class TelegramClient
         ChatActionEnum $action,
         int $message_thread_id = null,
     ): bool {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args());
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -820,7 +850,7 @@ readonly class TelegramClient
         bool $disable_web_page_preview = null,
         InlineKeyboardMarkup $reply_markup = null,
     ): Message|bool {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -847,7 +877,7 @@ readonly class TelegramClient
         array $caption_entities = null,
         InlineKeyboardMarkup $reply_markup = null,
     ): Message|bool {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -879,7 +909,7 @@ readonly class TelegramClient
         int $proximity_alert_radius = null,
         InlineKeyboardMarkup $reply_markup = null,
     ): Message|bool {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -900,7 +930,7 @@ readonly class TelegramClient
         string $inline_message_id = null,
         InlineKeyboardMarkup $reply_markup = null,
     ): Message|bool {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -921,7 +951,7 @@ readonly class TelegramClient
         int $inline_message_id = null,
         InlineKeyboardMarkup $reply_markup = null,
     ): Message|bool {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Message::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -940,7 +970,7 @@ readonly class TelegramClient
         int $message_id,
         InlineKeyboardMarkup $reply_markup = null,
     ): Poll {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Poll::class);
+        return $this->client->send(__METHOD__, func_get_args());
     }
 
     /**
@@ -965,6 +995,6 @@ readonly class TelegramClient
         int|string $chat_id,
         int $message_id,
     ): bool {
-        return $this->client->executeMethod($this->token, __METHOD__, func_get_args());
+        return $this->client->send(__METHOD__, func_get_args());
     }
 }

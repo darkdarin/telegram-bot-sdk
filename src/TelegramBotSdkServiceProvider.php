@@ -4,12 +4,8 @@ namespace DarkDarin\TelegramBotSdk;
 
 use DarkDarin\TelegramBotSdk\Commands\CommandHandler;
 use DarkDarin\TelegramBotSdk\Commands\CommandHandlerInterface;
-use DarkDarin\TelegramBotSdk\Factories\PsrClientFactory;
-use DarkDarin\TelegramBotSdk\Factories\PsrRequestFactoryFactory;
-use DarkDarin\TelegramBotSdk\Factories\PsrResponseFactoryFactory;
-use DarkDarin\TelegramBotSdk\Factories\PsrStreamFactoryFactory;
-use DarkDarin\TelegramBotSdk\TransportClient\TransportClient;
-use DarkDarin\TelegramBotSdk\TransportClient\TransportClientInterface;
+use DarkDarin\TelegramBotSdk\TransportClient\TelegramRequestFactory;
+use DarkDarin\TelegramBotSdk\TransportClient\TelegramRequestFactoryInterface;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
@@ -28,7 +24,7 @@ class TelegramBotSdkServiceProvider extends ServiceProvider
         $this->publishes(
             [
                 __DIR__ . '/../config/telegram.php' => $this->app->configPath('telegram.php'),
-            ]
+            ],
         );
     }
 
@@ -38,7 +34,7 @@ class TelegramBotSdkServiceProvider extends ServiceProvider
         $this->app->singleton(RequestFactoryInterface::class, (new PsrRequestFactoryFactory())(...));
         $this->app->singleton(ResponseFactoryInterface::class, (new PsrResponseFactoryFactory())(...));
         $this->app->singleton(StreamFactoryInterface::class, (new PsrStreamFactoryFactory())(...));
-        $this->app->singleton(TransportClientInterface::class, TransportClient::class);
+        $this->app->singleton(TelegramRequestFactoryInterface::class, TelegramRequestFactory::class);
         $this->app->singleton(Telegram::class, function (Container $container) {
             $default = Config::get('telegram.default', 'default');
             $bots = Config::get('telegram.bots', []);
@@ -65,7 +61,7 @@ class TelegramBotSdkServiceProvider extends ServiceProvider
                         }
                     }
                 }
-            }
+            },
         );
     }
 }

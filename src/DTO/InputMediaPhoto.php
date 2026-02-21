@@ -27,6 +27,6 @@ readonly class InputMediaPhoto
         public ?string $caption = null,
         public ?ParseModeEnum $parse_mode = null,
         public ?array $caption_entities = null,
-        public ?bool $has_spoiler = null
+        public ?bool $has_spoiler = null,
     ) {}
 }

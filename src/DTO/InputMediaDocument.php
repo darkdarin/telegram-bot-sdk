@@ -27,6 +27,6 @@ readonly class InputMediaDocument
         public ?string $caption = null,
         public ?ParseModeEnum $parse_mode = null,
         public ?array $caption_entities = null,
-        public ?bool $disable_content_type_detection = null
+        public ?bool $disable_content_type_detection = null,
     ) {}
 }

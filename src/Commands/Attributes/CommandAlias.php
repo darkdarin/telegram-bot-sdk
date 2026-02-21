@@ -7,6 +7,5 @@ readonly class CommandAlias
 {
     public function __construct(
         public string $alias,
-    ) {
-    }
+    ) {}
 }
