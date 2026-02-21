@@ -16,8 +16,8 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 class TransportClient implements TransportClientInterface
 {
-    private const BASE_URL = 'https://api.telegram.org';
-    private const MAX_RETRY = 10;
+    private const string BASE_URL = 'https://api.telegram.org';
+    private const int MAX_RETRY = 10;
 
     public function __construct(
         private readonly ClientInterface $client,

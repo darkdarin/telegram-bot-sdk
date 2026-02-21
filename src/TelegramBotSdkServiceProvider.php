@@ -32,6 +32,7 @@ class TelegramBotSdkServiceProvider extends ServiceProvider
         );
     }
 
+    #[\Override]
     public function register(): void
     {
         $this->app->singleton(ClientInterface::class, (new PsrClientFactory())(...));
@@ -55,7 +56,7 @@ class TelegramBotSdkServiceProvider extends ServiceProvider
 
         $this->app->afterResolving(
             CommandHandlerInterface::class,
-            function (CommandHandlerInterface $commandHandler, Container $container) {
+            function (CommandHandlerInterface $commandHandler, Container $container): void {
                 $bots = Config::get('telegram.bots', []);
 
                 foreach ($bots as $botName => $config) {

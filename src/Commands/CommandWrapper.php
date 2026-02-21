@@ -48,7 +48,7 @@ class CommandWrapper
     {
         $reflection = new \ReflectionClass($this->command);
 
-        $this->name = get_class($this->command);
+        $this->name = $this->command::class;
 
         $attributes = $reflection->getAttributes();
         foreach ($attributes as $attribute) {

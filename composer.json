@@ -28,7 +28,8 @@
         "laravel/pint": "^1.1",
         "illuminate/support": "^12.0",
         "hyperf/di": "~3.0.0",
-        "roave/security-advisories": "dev-latest"
+        "roave/security-advisories": "dev-latest",
+        "rector/rector": "^2.3"
     },
     "extra": {
         "laravel": {

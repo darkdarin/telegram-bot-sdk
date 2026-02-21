@@ -58,8 +58,8 @@ class CommandHandler implements CommandHandlerInterface
 
         foreach ($message->entities as $entity) {
             if ($entity->type === MessageEntityTypeEnum::BotCommand) {
-                $command = substr($message->text, $entity->offset + 1, $entity->length - 1);
-                $arguments = substr($message->text, $entity->offset + $entity->length + 1);
+                $command = substr((string) $message->text, $entity->offset + 1, $entity->length - 1);
+                $arguments = substr((string) $message->text, $entity->offset + $entity->length + 1);
                 return new MessageCommand($command, $arguments);
             }
         }
@@ -156,7 +156,7 @@ class CommandHandler implements CommandHandlerInterface
                 throw new TelegramException(
                     sprintf(
                         'Command [%s] expects parameter [%s], but it not declared',
-                        get_class($command),
+                        $command::class,
                         $parameter->getName(),
                     ),
                 );
