@@ -35,6 +35,6 @@ readonly class InputMediaVideo
         public ?int $height = null,
         public ?int $duration = null,
         public ?bool $supports_streaming = null,
-        public ?bool $has_spoiler = null
+        public ?bool $has_spoiler = null,
     ) {}
 }

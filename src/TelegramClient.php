@@ -39,8 +39,7 @@ readonly class TelegramClient
         private TransportClientInterface $client,
         private ApiSerializerInterface $serializer,
         private CommandHandlerInterface $commandHandler,
-    ) {
-    }
+    ) {}
 
     public function getWebhookUpdate(string $requestBody): Update
     {
@@ -92,7 +91,7 @@ readonly class TelegramClient
         int $offset = null,
         int $limit = null,
         int $timeout = null,
-        array $allowed_updates = []
+        array $allowed_updates = [],
     ): array {
         return $this->client->executeMethod($this->token, __METHOD__, func_get_args(), Update::class . '[]');
     }

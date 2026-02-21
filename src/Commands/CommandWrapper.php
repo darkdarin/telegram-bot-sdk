@@ -14,7 +14,7 @@ class CommandWrapper
     private ?string $description = null;
 
     public function __construct(
-        private readonly object $command
+        private readonly object $command,
     ) {
         $this->parseCommand();
     }

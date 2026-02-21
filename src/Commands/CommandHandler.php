@@ -17,8 +17,7 @@ class CommandHandler implements CommandHandlerInterface
 
     public function __construct(
         private readonly ContainerInterface $container,
-    ) {
-    }
+    ) {}
 
     public function registerCommand(string $botName, object $command): void
     {
@@ -90,7 +89,7 @@ class CommandHandler implements CommandHandlerInterface
             pattern: '#\{\s*(?<name>\w+)\s*(?::\s*(?<pattern>\S+)\s*)?}#ixmu',
             subject: $pattern,
             matches: $matches,
-            flags:   PREG_SET_ORDER
+            flags: PREG_SET_ORDER,
         );
 
         $patterns = collect($matches)
@@ -144,7 +143,7 @@ class CommandHandler implements CommandHandlerInterface
                 if ($typeName === TelegramClient::class) {
                     $parameters[$parameter->getName()] = $telegram->bot($botName);
                     continue;
-                } elseif($typeName === Message::class) {
+                } elseif ($typeName === Message::class) {
                     $parameters[$parameter->getName()] = $message;
                     continue;
                 } elseif ($this->container->has($typeName)) {
@@ -158,8 +157,8 @@ class CommandHandler implements CommandHandlerInterface
                     sprintf(
                         'Command [%s] expects parameter [%s], but it not declared',
                         get_class($command),
-                        $parameter->getName()
-                    )
+                        $parameter->getName(),
+                    ),
                 );
             }
         }

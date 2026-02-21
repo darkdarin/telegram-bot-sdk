@@ -25,8 +25,7 @@ class TransportClient implements TransportClientInterface
         private readonly StreamFactoryInterface $streamFactory,
         private readonly ApiSerializerInterface $serializer,
         private readonly MethodParametersMapperInterface $parametersMapper,
-    ) {
-    }
+    ) {}
 
     /**
      * @template TObject of object
@@ -63,7 +62,7 @@ class TransportClient implements TransportClientInterface
                 $response = $this->serializer->deserialize(
                     $rawResponse->getBody()->getContents(),
                     Response::class,
-                    'json'
+                    'json',
                 );
                 // If returned "Too many requests" - retry after some time
                 if ($response->error_code === 429) {
@@ -76,7 +75,7 @@ class TransportClient implements TransportClientInterface
             if ($response->error_code !== null || $rawResponse->getStatusCode() !== 200) {
                 throw new TelegramException(
                     $response->description ?? $rawResponse->getReasonPhrase(),
-                    $response->error_code ?? $rawResponse->getStatusCode()
+                    $response->error_code ?? $rawResponse->getStatusCode(),
                 );
             }
 
@@ -97,7 +96,7 @@ class TransportClient implements TransportClientInterface
         $data = $this->parametersMapper->getNamedArguments($method, $parameters);
 
         $dataStream = $this->streamFactory->createStream(
-            $this->serializer->serialize((object)$data, 'json')
+            $this->serializer->serialize((object) $data, 'json'),
         );
 
         return $this->requestFactory
@@ -114,7 +113,7 @@ class TransportClient implements TransportClientInterface
         string $token,
         string $method,
         array $parameters,
-        string|bool $multipartField
+        string|bool $multipartField,
     ): RequestInterface {
         $data = $this->parametersMapper->getNamedArguments($method, $parameters);
 
@@ -126,22 +125,22 @@ class TransportClient implements TransportClientInterface
             } elseif ($value !== null) {
                 $normalizedValue = $this->serializer->normalize(
                     $this->normalizeValue($value, $builder),
-                    'json'
+                    'json',
                 );
 
                 if (is_array($normalizedValue) || is_object($normalizedValue)) {
                     $builder->addResource(
                         $fieldName,
                         $this->streamFactory->createStream(
-                            $this->serializer->encode($normalizedValue, 'json')
+                            $this->serializer->encode($normalizedValue, 'json'),
                         ),
-                        ['headers' => ['Content-Type' => 'application/json']]
+                        ['headers' => ['Content-Type' => 'application/json']],
                     );
                 } else {
                     $builder->addResource(
                         $fieldName,
                         $this->streamFactory->createStream($normalizedValue),
-                        ['headers' => ['Content-Type' => 'text/plain']]
+                        ['headers' => ['Content-Type' => 'text/plain']],
                     );
                 }
             }
@@ -159,7 +158,7 @@ class TransportClient implements TransportClientInterface
             '%s/bot%s/%s',
             trim(self::BASE_URL, '/'),
             $token,
-            $method
+            $method,
         );
     }
 

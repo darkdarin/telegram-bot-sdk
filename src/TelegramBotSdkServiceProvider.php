@@ -28,7 +28,7 @@ class TelegramBotSdkServiceProvider extends ServiceProvider
         $this->publishes(
             [
                 __DIR__ . '/../config/telegram.php' => $this->app->configPath('telegram.php'),
-            ]
+            ],
         );
     }
 
@@ -65,7 +65,7 @@ class TelegramBotSdkServiceProvider extends ServiceProvider
                         }
                     }
                 }
-            }
+            },
         );
     }
 }
